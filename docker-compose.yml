@@ -1,0 +1,9 @@
+services:
+  yt-downloader:
+    build: ./docker/python
+    container_name: yt
+    ports:
+      - ${APP_PORT}:8000
+    volumes:
+      - ${APP}:/home/app
+    restart: unless-stopped
