@@ -1,6 +1,6 @@
 services:
   yt-downloader:
-    build: ./docker/python
+    build: ./docker
     container_name: yt
     ports:
       - ${APP_PORT}:8000
