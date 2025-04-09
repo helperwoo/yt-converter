@@ -19,7 +19,7 @@ async def home():
     </form>
     """
 
-@app.post("/convert")
+@app.post("/convert", response_class=HTMLResponse)
 async def convert(url: str = Form(...)):
     filename = f"{uuid.uuid4()}.mp4"
     filepath = DOWNLOAD_DIR / filename
@@ -33,9 +33,13 @@ async def convert(url: str = Form(...)):
 
     try:
         subprocess.run(command, check=True)
-        return f"✅ 다운로드 완료! <a href='/download/{filename}'>여기서 받기</a>"
+        return f"""
+        ✅ 다운로드 완료! <a href='/download/{filename}'>여기서 받기</a>
+        """
     except subprocess.CalledProcessError as e:
-        return f"❌ 다운로드 실패: {e}"
+        return f"""
+        ❌ 다운로드 실패: {e}
+        """
 
 @app.get("/download/{filename}")
 async def download(filename: str):

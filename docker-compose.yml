@@ -1,6 +1,9 @@
 services:
   yt-downloader:
-    build: ./docker
+    build:
+      context: .
+      dockerfile: Dockerfile.build
+    
     container_name: yt
     ports:
       - ${APP_PORT}:8000
