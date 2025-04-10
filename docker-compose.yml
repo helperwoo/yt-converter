@@ -2,7 +2,7 @@ services:
   yt-downloader:
     build:
       context: .
-      dockerfile: Dockerfile.build
+      dockerfile: Dockerfile
     
     container_name: yt
     ports:
