@@ -2,11 +2,9 @@ services:
   yt-downloader:
     build:
       context: .
-      dockerfile: Dockerfile
-    
     container_name: yt
     ports:
-      - ${APP_PORT}:8000
+      - 8001:8000
     volumes:
-      - ${APP}:/home/app
+      - ./app:/home/app
     restart: unless-stopped

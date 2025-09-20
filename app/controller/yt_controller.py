@@ -1,12 +1,14 @@
 import os
 from pathlib import Path
-from fastapi import Form, APIRouter
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
+from fastapi import Form, APIRouter, Request
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
 from service import yt_service
 import subprocess
 import uuid
 
 router = APIRouter(tags=["YT"])
+templates = Jinja2Templates(directory="templates")
 
 DOWNLOAD_DIR = Path(os.getenv("DOWNLOAD_DIR", "downloads"))
 DOWNLOAD_DIR.mkdir(exist_ok=True)
@@ -15,51 +17,61 @@ DOWNLOAD_DIR.mkdir(exist_ok=True)
 async def ping():
     return {"pong": True}
 
-@router.get("/", response_class=HTMLResponse)
-async def home():
-    return """
-    <form action="/convert" method="post">
-        <select name="ext">
-            <option value="mp3">mp3</option>
-            <option value="mp4">mp4</option>
-        </select>
-        <input type="text" name="url" placeholder="YouTube 링크 입력" style="width:300px"/>
-        <button type="submit">Convert</button>
-    </form>
-    """
+@router.get("/")
+async def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
-@router.post("/convert", response_class=HTMLResponse)
-async def convert(ext: str = Form(...), url: str = Form(...)):
+@router.post("/convert")
+async def convert(request: Request, ext: str = Form(...), quality: str = Form(...), url: str = Form(...)):
     filename = f"{uuid.uuid4()}.{ext}"
     filepath = DOWNLOAD_DIR / filename
 
     command = ["yt-dlp"]
-    command += ["-f", "best"]
-    command += ["--extract-audio", "--audio-format" , "mp3"] if ext == "mp3" else []
-    command += ["--merge-output-format", "mp4"] if ext == "mp4" else []
+    
+    if ext == "mp3":
+        # MP3 오디오 변환 설정
+        command += ["--extract-audio", "--audio-format", "mp3"]
+        command += ["--audio-quality", quality + "K"]  # 320K, 256K, 192K, 128K
+        command += ["-f", "bestaudio/best"]
+    else:  # mp4
+        # MP4 비디오 변환 설정
+        if quality == "1080":
+            command += ["-f", "best[height<=1080]"]
+        elif quality == "720":
+            command += ["-f", "best[height<=720]"]
+        elif quality == "480":
+            command += ["-f", "best[height<=480]"]
+        elif quality == "360":
+            command += ["-f", "best[height<=360]"]
+        else:
+            command += ["-f", "best"]
+        command += ["--merge-output-format", "mp4"]
+    
     command += ["-o", str(filepath), url]
 
     try:
         subprocess.run(command, check=True)
-        return RedirectResponse(url=f"/result/{filename}", status_code=303)
+        return RedirectResponse(url=f"/result/{filename}?ext={ext}&quality={quality}", status_code=303)
     except subprocess.CalledProcessError as e:
-        return f"""
-            ❌ 변환 실패: {e}
-        """
+        return templates.TemplateResponse("error.html", {
+            "request": request,
+            "error_message": str(e)
+        })
 
-@router.get("/result/{filename}", response_class=HTMLResponse)
-async def result(filename: str):
-    return f"""
-        <div>
-            ✅ 변환 완료!
-        </div>
-        <div>
-            <a href='/download/{filename}'>다운로드</a>
-        </div>
-        <div>
-            <a href='/send/{filename}' target='_blank'>메일 전송</a>
-        </div>
-        """
+@router.get("/result/{filename}")
+async def result(request: Request, filename: str, ext: str = None, quality: str = None):
+    # 품질 정보를 사용자 친화적으로 변환
+    quality_info = ""
+    if ext == "mp3" and quality:
+        quality_info = f"{quality}kbps MP3"
+    elif ext == "mp4" and quality:
+        quality_info = f"{quality}p MP4"
+    
+    return templates.TemplateResponse("result.html", {
+        "request": request,
+        "filename": filename,
+        "quality_info": quality_info
+    })
 
 @router.get("/download/{filename}")
 async def download(filename: str):

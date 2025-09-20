@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}변환 실패 - YouTube Converter{% endblock %}
+
+{% block body_class %}bg-gradient-to-br from-red-900 via-pink-900 to-rose-900{% endblock %}
+
+{% block content %}
+<div class="text-center">
+    <div class="mx-auto h-20 w-20 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center mb-6">
+        <svg class="h-10 w-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+        </svg>
+    </div>
+    <h2 class="text-4xl font-bold text-white mb-2">변환 실패</h2>
+    <p class="text-red-200 text-lg">YouTube 영상 변환 중 오류가 발생했습니다</p>
+</div>
+
+<div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 space-y-4">
+    <div class="bg-red-500/20 border border-red-400/30 rounded-xl p-4">
+        <h3 class="text-white font-semibold mb-2">오류 내용:</h3>
+        <p class="text-red-200 text-sm font-mono break-all">{{ error_message }}</p>
+    </div>
+    
+    <div class="bg-yellow-500/20 border border-yellow-400/30 rounded-xl p-4">
+        <h3 class="text-white font-semibold mb-2">💡 해결 방법:</h3>
+        <ul class="text-yellow-200 text-sm space-y-1">
+            <li>• YouTube URL이 올바른지 확인해주세요</li>
+            <li>• 비공개 영상은 변환할 수 없습니다</li>
+            <li>• 네트워크 연결을 확인해주세요</li>
+            <li>• 잠시 후 다시 시도해주세요</li>
+        </ul>
+    </div>
+    
+    <a href="/" 
+       class="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-transparent shadow-lg flex items-center justify-center">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+        </svg>
+        다시 시도하기
+    </a>
+</div>
+
+<div class="text-center">
+    <p class="text-red-200 text-sm">
+        문제가 지속되면 다른 YouTube URL로 시도해보세요
+    </p>
+</div>
+{% endblock %}
