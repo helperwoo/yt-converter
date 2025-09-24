@@ -9,6 +9,6 @@ WORKDIR /home/app
 COPY app/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN mkdir -p downloads
+RUN mkdir -p downloads db
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

@@ -3,7 +3,7 @@ from pathlib import Path
 from fastapi import Form, APIRouter, Request
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from service import yt_service
+from service.job_service import JobService
 import subprocess
 import uuid
 
@@ -23,40 +23,63 @@ async def home(request: Request):
 
 @router.post("/convert")
 async def convert(request: Request, ext: str = Form(...), quality: str = Form(...), url: str = Form(...)):
-    filename = f"{uuid.uuid4()}.{ext}"
-    filepath = DOWNLOAD_DIR / filename
-
-    command = ["yt-dlp"]
+    # 백그라운드 작업 생성
+    job_id = await JobService.create_job(url, ext, quality)
     
-    if ext == "mp3":
-        # MP3 오디오 변환 설정
-        command += ["--extract-audio", "--audio-format", "mp3"]
-        command += ["--audio-quality", quality + "K"]  # 320K, 256K, 192K, 128K
-        command += ["-f", "bestaudio/best"]
-    else:  # mp4
-        # MP4 비디오 변환 설정
-        if quality == "1080":
-            command += ["-f", "best[height<=1080]"]
-        elif quality == "720":
-            command += ["-f", "best[height<=720]"]
-        elif quality == "480":
-            command += ["-f", "best[height<=480]"]
-        elif quality == "360":
-            command += ["-f", "best[height<=360]"]
-        else:
-            command += ["-f", "best"]
-        command += ["--merge-output-format", "mp4"]
-    
-    command += ["-o", str(filepath), url]
+    # 작업 상태 페이지로 리다이렉트
+    return RedirectResponse(url=f"/job/{job_id}", status_code=303)
 
-    try:
-        subprocess.run(command, check=True)
-        return RedirectResponse(url=f"/result/{filename}?ext={ext}&quality={quality}", status_code=303)
-    except subprocess.CalledProcessError as e:
+@router.get("/job/{job_id}")
+async def job_status(request: Request, job_id: str):
+    job = await JobService.get_job(job_id)
+    if not job:
         return templates.TemplateResponse("error.html", {
             "request": request,
-            "error_message": str(e)
+            "error_message": "작업을 찾을 수 없습니다."
         })
+    
+    return templates.TemplateResponse("job_status.html", {
+        "request": request,
+        "job": job
+    })
+
+@router.get("/jobs")
+async def jobs_list(request: Request):
+    jobs = await JobService.get_all_jobs()
+    return templates.TemplateResponse("jobs.html", {
+        "request": request,
+        "jobs": jobs
+    })
+
+@router.get("/api/job/{job_id}")
+async def get_job_api(job_id: str):
+    job = await JobService.get_job(job_id)
+    if not job:
+        return {"error": "Job not found"}
+    
+    return {
+        "job_id": job.job_id,
+        "status": job.status,
+        "progress": job.progress,
+        "filename": job.filename,
+        "error_message": job.error_message,
+        "created_at": job.created_at.isoformat() if job.created_at else None,
+        "completed_at": job.completed_at.isoformat() if job.completed_at else None
+    }
+
+@router.delete("/api/job/{job_id}")
+async def delete_job_api(job_id: str):
+    success = await JobService.delete_job(job_id)
+    if success:
+        return {"message": "Job deleted successfully"}
+    return {"error": "Job not found or could not be deleted"}
+
+@router.post("/api/job/{job_id}/retry")
+async def retry_job_api(job_id: str):
+    new_job_id = await JobService.retry_job(job_id)
+    if new_job_id:
+        return {"message": "Job retry started", "new_job_id": new_job_id}
+    return {"error": "Job not found or could not be retried"}
 
 @router.get("/result/{filename}")
 async def result(request: Request, filename: str, ext: str = None, quality: str = None):
@@ -80,9 +103,3 @@ async def download(filename: str):
         return FileResponse(path=filepath, filename=filename, media_type='application/octet-stream')
     return {"error": "파일이 존재하지 않음"}
 
-@router.get("/send/{filename}")
-async def send(filename: str):
-    filepath = DOWNLOAD_DIR / filename
-    if filepath.exists():
-        return yt_service.send_mail(filepath)
-    return {"error": "파일이 존재하지 않음"}

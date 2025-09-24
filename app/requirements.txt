@@ -2,5 +2,8 @@ fastapi
 uvicorn[standard]
 python-multipart
 python-dotenv
-yt-dlp
+yt-dlp>=2025.9.23
 jinja2
+sqlalchemy
+aiosqlite
+greenlet

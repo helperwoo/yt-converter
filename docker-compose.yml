@@ -1,10 +1,9 @@
 services:
-  yt-downloader:
+  yt:
     build:
       context: .
-    container_name: yt
     ports:
-      - 8001:8000
+      - 8000:8000
     volumes:
       - ./app:/home/app
     restart: unless-stopped

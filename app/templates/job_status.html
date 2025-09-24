@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}작업 상태 - YouTube Converter{% endblock %}
+
+{% block body_class %}bg-gradient-to-br from-blue-900 via-indigo-900 to-purple-900{% endblock %}
+
+{% block content %}
+<script>
+let jobId = "{{ job.job_id }}";
+
+async function updateJobStatus() {
+    try {
+        const response = await fetch(`/api/job/${jobId}`);
+        const jobData = await response.json();
+        
+        if (jobData.error) {
+            console.error('Job not found');
+            return;
+        }
+        
+        // 진행률 업데이트
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const statusBadge = document.getElementById('status-badge');
+        const actionButtons = document.getElementById('action-buttons');
+        
+        progressBar.style.width = `${jobData.progress}%`;
+        progressText.textContent = `${jobData.progress}%`;
+        
+        // 상태별 UI 업데이트
+        if (jobData.status === 'completed') {
+            statusBadge.innerHTML = '<span class="px-3 py-1 bg-green-500 text-white rounded-full text-sm">✅ 완료</span>';
+            progressBar.className = 'h-2 bg-green-500 rounded-full transition-all duration-300';
+            
+            // 다운로드 버튼 표시
+            actionButtons.innerHTML = `
+                <a href="/download/${jobData.filename}" 
+                   class="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-transparent shadow-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    다운로드
+                </a>
+            `;
+            clearInterval(statusInterval);
+        } else if (jobData.status === 'failed') {
+            statusBadge.innerHTML = '<span class="px-3 py-1 bg-red-500 text-white rounded-full text-sm">❌ 실패</span>';
+            progressBar.className = 'h-2 bg-red-500 rounded-full transition-all duration-300';
+            
+            // 실패한 작업용 버튼들 표시
+            actionButtons.innerHTML = `
+                <button onclick="retryJob('${jobId}')" 
+                   class="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-transparent shadow-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    재변환
+                </button>
+                <button onclick="deleteJob('${jobId}')" 
+                   class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-transparent shadow-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    삭제
+                </button>
+            `;
+            
+            const errorDiv = document.getElementById('error-message');
+            if (jobData.error_message) {
+                errorDiv.innerHTML = `
+                    <div class="bg-red-500/20 border border-red-400/30 rounded-xl p-4 mt-4">
+                        <h3 class="text-white font-semibold mb-2">오류 내용:</h3>
+                        <p class="text-red-200 text-sm font-mono break-all">${jobData.error_message}</p>
+                    </div>
+                `;
+            }
+            clearInterval(statusInterval);
+        } else if (jobData.status === 'processing') {
+            statusBadge.innerHTML = '<span class="px-3 py-1 bg-blue-500 text-white rounded-full text-sm animate-pulse">🔄 변환 중</span>';
+            progressBar.className = 'h-2 bg-blue-500 rounded-full transition-all duration-300';
+        } else {
+            statusBadge.innerHTML = '<span class="px-3 py-1 bg-yellow-500 text-white rounded-full text-sm">⏳ 대기 중</span>';
+            progressBar.className = 'h-2 bg-yellow-500 rounded-full transition-all duration-300';
+        }
+        
+    } catch (error) {
+        console.error('Failed to update job status:', error);
+    }
+}
+
+// 재변환 함수
+async function retryJob(jobId) {
+    if (!confirm('이 작업을 재변환하시겠습니까?')) return;
+    
+    try {
+        const response = await fetch(`/api/job/${jobId}/retry`, {
+            method: 'POST'
+        });
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('재변환 요청에 실패했습니다.');
+        }
+    } catch (error) {
+        alert('재변환 요청 중 오류가 발생했습니다.');
+    }
+}
+
+// 삭제 함수
+async function deleteJob(jobId) {
+    if (!confirm('이 작업을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+    
+    try {
+        const response = await fetch(`/api/job/${jobId}`, {
+            method: 'DELETE'
+        });
+        if (response.ok) {
+            window.location.href = '/jobs';
+        } else {
+            alert('삭제 요청에 실패했습니다.');
+        }
+    } catch (error) {
+        alert('삭제 요청 중 오류가 발생했습니다.');
+    }
+}
+
+// 주기적으로 상태 업데이트
+let statusInterval;
+document.addEventListener('DOMContentLoaded', function() {
+    updateJobStatus();
+    statusInterval = setInterval(updateJobStatus, 2000); // 2초마다 업데이트
+});
+</script>
+
+<div class="text-center">
+    <div class="mx-auto h-20 w-20 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mb-6">
+        <svg class="h-10 w-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+    </div>
+    <h2 class="text-4xl font-bold text-white mb-2">변환 작업 진행중</h2>
+    <p class="text-blue-200 text-lg">잠시만 기다려주세요...</p>
+</div>
+
+<div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 space-y-6">
+    <div class="text-center">
+        <div id="status-badge" class="mb-4">
+            {% if job.status == 'completed' %}
+            <span class="px-3 py-1 bg-green-500 text-white rounded-full text-sm">✅ 완료</span>
+            {% elif job.status == 'failed' %}
+            <span class="px-3 py-1 bg-red-500 text-white rounded-full text-sm">❌ 실패</span>
+            {% elif job.status == 'processing' %}
+            <span class="px-3 py-1 bg-blue-500 text-white rounded-full text-sm animate-pulse">🔄 변환 중</span>
+            {% else %}
+            <span class="px-3 py-1 bg-yellow-500 text-white rounded-full text-sm">⏳ 대기 중</span>
+            {% endif %}
+        </div>
+        
+        <div class="bg-gray-700 rounded-full h-2 mb-2">
+            <div id="progress-bar" 
+                 class="h-2 {% if job.status == 'completed' %}bg-green-500{% elif job.status == 'failed' %}bg-red-500{% elif job.status == 'processing' %}bg-blue-500{% else %}bg-yellow-500{% endif %} rounded-full transition-all duration-300" 
+                 style="width: {{ job.progress }}%"></div>
+        </div>
+        <p id="progress-text" class="text-white text-sm">{{ job.progress }}%</p>
+    </div>
+    
+    <div class="space-y-2 text-sm">
+        <div class="flex justify-between">
+            <span class="text-gray-300">형식:</span>
+            <span class="text-white">{{ job.format.upper() }}</span>
+        </div>
+        <div class="flex justify-between">
+            <span class="text-gray-300">품질:</span>
+            <span class="text-white">
+                {% if job.format == 'mp3' %}{{ job.quality }}kbps{% else %}{{ job.quality }}p{% endif %}
+            </span>
+        </div>
+        <div class="flex justify-between">
+            <span class="text-gray-300">시작 시간:</span>
+            <span class="text-white">{{ job.created_at.strftime('%Y-%m-%d %H:%M:%S') if job.created_at else 'N/A' }}</span>
+        </div>
+    </div>
+    
+    <div id="action-buttons" class="space-y-3">
+        {% if job.status == 'completed' and job.filename %}
+        <a href="/download/{{ job.filename }}" 
+           class="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-transparent shadow-lg flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            다운로드
+        </a>
+        
+        {% elif job.status == 'failed' %}
+        <button onclick="retryJob('{{ job.job_id }}')" 
+           class="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-transparent shadow-lg flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            재변환
+        </button>
+        <button onclick="deleteJob('{{ job.job_id }}')" 
+           class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-transparent shadow-lg flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+            삭제
+        </button>
+        {% endif %}
+        
+        <a href="/" 
+           class="w-full bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 border border-white/20 hover:border-white/40 flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            새 변환 작업
+        </a>
+        
+        <a href="/jobs" 
+           class="w-full bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 border border-white/20 hover:border-white/40 flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            모든 작업 보기
+        </a>
+    </div>
+    
+    <div id="error-message">
+        {% if job.status == 'failed' and job.error_message %}
+        <div class="bg-red-500/20 border border-red-400/30 rounded-xl p-4">
+            <h3 class="text-white font-semibold mb-2">오류 내용:</h3>
+            <p class="text-red-200 text-sm font-mono break-all">{{ job.error_message }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="text-center">
+    <p class="text-blue-200 text-sm">
+        페이지를 새로고침하지 마세요. 상태가 자동으로 업데이트됩니다.
+    </p>
+</div>
+{% endblock %}
