@@ -1,9 +1,14 @@
 services:
-  yt:
+  python:
     build:
       context: .
-    ports:
-      - 8000:8000
+    restart: unless-stopped
+    networks:
+      - proxy
+    expose:
+      - "80"
     volumes:
       - ./app:/home/app
-    restart: unless-stopped
+networks:
+  proxy:
+    external: true
