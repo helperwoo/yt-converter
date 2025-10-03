@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from controller import yt_controller
 from database import create_tables
@@ -12,6 +13,8 @@ async def lifespan(app: FastAPI):
     # 종료 시 정리 작업 (필요한 경우)
 
 app = FastAPI(lifespan=lifespan)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 load_dotenv()
 app.include_router(yt_controller.router)
 

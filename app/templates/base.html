@@ -1,39 +1,44 @@
 <!DOCTYPE html>
 <html lang="ko" class="h-full">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}YouTube Converter{% endblock %}</title>
+    <link rel="icon" href="/static/images/favicon.png" type="image/png" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    animation: {
-                        'gradient': 'gradient 15s ease infinite',
-                    },
-                    keyframes: {
-                        'gradient': {
-                            '0%, 100%': {
-                                'background-size': '200% 200%',
-                                'background-position': 'left center'
-                            },
-                            '50%': {
-                                'background-size': '200% 200%',
-                                'background-position': 'right center'
-                            }
-                        }
-                    }
-                }
-            }
-        }
+      tailwind.config = {
+        theme: {
+          extend: {
+            animation: {
+              gradient: "gradient 15s ease infinite",
+            },
+            keyframes: {
+              gradient: {
+                "0%, 100%": {
+                  "background-size": "200% 200%",
+                  "background-position": "left center",
+                },
+                "50%": {
+                  "background-size": "200% 200%",
+                  "background-position": "right center",
+                },
+              },
+            },
+          },
+        },
+      };
     </script>
-</head>
-<body class="h-full {% block body_class %}bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 animate-gradient{% endblock %}">
-    <div class="min-h-full flex items-center justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8">
-        <div class="w-full max-w-md lg:max-w-2xl space-y-6 sm:space-y-8">
-            {% block content %}{% endblock %}
-        </div>
+  </head>
+  <body
+    class="h-full {% block body_class %}bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 animate-gradient{% endblock %}"
+  >
+    <div
+      class="min-h-full flex items-center justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8"
+    >
+      <div class="w-full max-w-md lg:max-w-2xl space-y-6 sm:space-y-8">
+        {% block content %}{% endblock %}
+      </div>
     </div>
-</body>
+  </body>
 </html>
