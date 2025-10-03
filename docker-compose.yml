@@ -1,14 +1,15 @@
 services:
-  python:
+  youtube_converter:
     build:
       context: .
     restart: unless-stopped
+    container_name: youtube_converter
     networks:
-      - proxy
+      - traefik
     expose:
-      - "80"
+      - "8000"
     volumes:
       - ./app:/home/app
 networks:
-  proxy:
+  traefik:
     external: true
