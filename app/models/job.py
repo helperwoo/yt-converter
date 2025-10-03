@@ -20,6 +20,7 @@ class ConversionJob(Base):
     url = Column(Text, nullable=False)
     format = Column(String(10), nullable=False)  # mp3, mp4
     quality = Column(String(10), nullable=False)  # 320, 1080, etc
+    title = Column(String(500), nullable=True)  # YouTube video title
     filename = Column(String(255), nullable=True)
     status = Column(String(20), default=JobStatus.PENDING)
     progress = Column(Integer, default=0)  # 0-100%

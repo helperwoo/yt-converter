@@ -63,10 +63,10 @@ async function retryJob(jobId) {
     <div class="space-y-4">
         {% for job in jobs %}
         <div class="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-all duration-200">
-            <div class="flex items-center justify-between">
-                <div class="flex-1">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div class="flex-1 min-w-0">
                     <div class="flex items-center space-x-3 mb-2">
-                        <span class="px-2 py-1 text-xs rounded-full
+                        <span class="px-2 py-1 text-xs rounded-full flex-shrink-0
                             {% if job.status == 'completed' %}bg-green-500{% elif job.status == 'failed' %}bg-red-500{% elif job.status == 'processing' %}bg-blue-500{% else %}bg-yellow-500{% endif %} text-white">
                             {% if job.status == 'completed' %}✅ 완료
                             {% elif job.status == 'failed' %}❌ 실패
@@ -74,13 +74,18 @@ async function retryJob(jobId) {
                             {% else %}⏳ 대기
                             {% endif %}
                         </span>
-                        <span class="text-gray-300 text-sm">{{ job.format.upper() }}</span>
-                        <span class="text-gray-300 text-sm">
+                        <span class="text-gray-300 text-sm flex-shrink-0">{{ job.format.upper() }}</span>
+                        <span class="text-gray-300 text-sm flex-shrink-0">
                             {% if job.format == 'mp3' %}{{ job.quality }}kbps{% else %}{{ job.quality }}p{% endif %}
                         </span>
                     </div>
-                    
-                    <p class="text-white font-medium text-sm mb-1">{{ job.url[:60] }}{% if job.url|length > 60 %}...{% endif %}</p>
+
+                    {% if job.title %}
+                    <p class="text-white font-medium text-sm mb-1 truncate" title="{{ job.title }}">{{ job.title }}</p>
+                    <p class="text-gray-400 text-xs truncate" title="{{ job.url }}">{{ job.url }}</p>
+                    {% else %}
+                    <p class="text-white font-medium text-sm mb-1 truncate" title="{{ job.url }}">{{ job.url }}</p>
+                    {% endif %}
                     <p class="text-gray-400 text-xs">{{ job.created_at.strftime('%Y-%m-%d %H:%M:%S') if job.created_at else 'N/A' }}</p>
                     
                     {% if job.status == 'processing' %}
@@ -92,37 +97,37 @@ async function retryJob(jobId) {
                     </div>
                     {% endif %}
                 </div>
-                
-                <div class="flex space-x-2 ml-4">
-                    <a href="/job/{{ job.job_id }}" 
-                       class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors">
+
+                <div class="flex flex-wrap gap-2 sm:flex-nowrap sm:ml-4">
+                    <a href="/job/{{ job.job_id }}"
+                       class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors whitespace-nowrap">
                         상세보기
                     </a>
-                    
+
                     <button onclick="copyToClipboard('{{ request.url_for('get_job_api', job_id=job.job_id) }}')"
-                       class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded text-sm transition-colors flex items-center">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded text-sm transition-colors flex items-center whitespace-nowrap">
+                        <svg class="w-4 h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                         </svg>
                         복사
                     </button>
-                    
+
                     {% if job.status == 'completed' and job.filename %}
-                    <a href="/download/{{ job.filename }}" 
-                       class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                    <a href="/download/{{ job.filename }}"
+                       class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-colors whitespace-nowrap">
                         다운로드
                     </a>
                     <button onclick="copyToClipboard('{{ request.url_for('download', filename=job.filename) }}')"
-                       class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded text-sm transition-colors flex items-center">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded text-sm transition-colors flex items-center whitespace-nowrap">
+                        <svg class="w-4 h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                         </svg>
                         링크
                     </button>
                     {% elif job.status == 'failed' %}
-                    <button onclick="retryJob('{{ job.job_id }}')" 
-                       class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm transition-colors flex items-center">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button onclick="retryJob('{{ job.job_id }}')"
+                       class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm transition-colors flex items-center whitespace-nowrap">
+                        <svg class="w-4 h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                         </svg>
                         재변환

@@ -48,8 +48,9 @@ The codebase follows a clean layered architecture:
   - Auto-creates tables on application startup via lifespan event
 
 - **Models** (`models/job.py`): SQLAlchemy ORM models
-  - `ConversionJob`: Tracks URL, format, quality, status, progress, timestamps
+  - `ConversionJob`: Tracks URL, format, quality, title, status, progress, timestamps
   - `JobStatus`: Enum with PENDING, PROCESSING, COMPLETED, FAILED states
+  - `title` column (String(500), nullable): Stores YouTube video title extracted via yt-dlp
 
 ### Background Job Processing
 
@@ -58,10 +59,34 @@ Jobs are processed asynchronously using `asyncio.create_task()`:
 1. User submits conversion request → creates job record with PENDING status
 2. Background task starts immediately (`JobService.process_job()`)
 3. Job status transitions: PENDING → PROCESSING → COMPLETED/FAILED
-4. Progress tracked at 0% → 10% → 50% → 100%
-5. Files saved to `downloads/` directory with `{job_id}.{format}` naming
+4. Progress tracking:
+   - 0%: Initial creation
+   - 10%: Processing started
+   - 20%: YouTube title extracted and saved to DB
+   - 60%: yt-dlp conversion in progress
+   - 100%: Completed
+5. Files saved to `downloads/` directory with `{sanitized_title}.{format}` naming
 
 **Important**: Each job processing session carefully manages SQLAlchemy async sessions to avoid "object is already attached to session" errors. Sessions are opened and closed strategically around blocking subprocess calls.
+
+### YouTube Title Extraction
+
+Before downloading, the service extracts the video title using yt-dlp:
+
+- **Method**: `get_video_title(url)` in `service/job_service.py`
+- **Command**: `yt-dlp --dump-json --no-playlist {url}`
+- **Purpose**: Get metadata without downloading the video
+- **Fallback**: Returns 'Untitled Video' if extraction fails
+
+### Filename Sanitization
+
+The `sanitize_filename()` function ensures cross-platform compatibility:
+
+- **Removes**: `< > : " / \ | ? *` and control characters (Windows/Linux/macOS)
+- **Normalizes**: Multiple spaces to single space
+- **Prevents**: Hidden files (leading dots), empty filenames
+- **Limits**: Maximum 100 characters
+- **Example**: `"제목: 테스트/영상"` → `"제목 테스트영상.mp3"`
 
 ### yt-dlp Integration
 
@@ -78,12 +103,17 @@ Quality options:
 
 Jinja2 templates in `templates/`:
 - `index.html`: Main conversion form
-- `job_status.html`: Job progress tracking with auto-refresh
-- `jobs.html`: All jobs list view
+- `job_status.html`: Job progress tracking with auto-refresh, displays video title
+- `jobs.html`: All jobs list view with video titles and responsive layout
 - `result.html`: Download page after completion
 - `error.html`: Error display
+- `base.html`: Base layout with responsive container (max-w-md mobile, max-w-2xl desktop)
 
-Uses Tailwind CSS for styling (loaded from base template).
+Uses Tailwind CSS for styling with text overflow handling:
+- **Truncate**: One-line text with ellipsis (`truncate` class)
+- **Word wrap**: Multi-line text breaking (`break-words`, `overflow-wrap-anywhere`)
+- **Responsive layout**: Mobile-first flex layouts (`flex-col sm:flex-row`)
+- **Container width**: Responsive max-width (448px mobile → 672px desktop)
 
 ## Environment Variables
 
@@ -108,3 +138,19 @@ Uses Docker with Traefik reverse proxy integration:
 - External network: `traefik` (must be created separately)
 - Volume mount: `./app:/home/app` for hot-reloading
 - Persistent data: SQLite DB and downloads stored in container volumes
+
+### Database Migration
+
+When deploying after the title column addition:
+
+1. **Development**: Auto-applies on restart (SQLAlchemy creates missing columns)
+2. **Production**: Run migration script before deployment
+   ```bash
+   # Backup database first
+   cp jobs.db jobs.db.backup
+
+   # Apply migration
+   sqlite3 jobs.db < migrations/001_add_title_column.sql
+   ```
+
+See `MIGRATION_GUIDE.md` for detailed instructions.

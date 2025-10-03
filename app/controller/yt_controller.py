@@ -56,11 +56,12 @@ async def get_job_api(job_id: str):
     job = await JobService.get_job(job_id)
     if not job:
         return {"error": "Job not found"}
-    
+
     return {
         "job_id": job.job_id,
         "status": job.status,
         "progress": job.progress,
+        "title": job.title,
         "filename": job.filename,
         "error_message": job.error_message,
         "created_at": job.created_at.isoformat() if job.created_at else None,

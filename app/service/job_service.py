@@ -1,6 +1,8 @@
 import asyncio
 import subprocess
 import uuid
+import re
+import json
 from pathlib import Path
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,6 +13,59 @@ import os
 
 DOWNLOAD_DIR = Path(os.getenv("DOWNLOAD_DIR", "downloads"))
 DOWNLOAD_DIR.mkdir(exist_ok=True)
+
+def sanitize_filename(title: str, max_length: int = 100) -> str:
+    """
+    YouTube 제목을 파일명으로 사용할 수 있도록 변환
+    - 파일시스템에서 사용할 수 없는 문자 제거
+    - 길이 제한
+    - 공백 처리
+    """
+    # 파일명에 사용할 수 없는 문자 제거 (Windows, Linux, macOS 모두 고려)
+    # < > : " / \ | ? * 와 제어 문자 제거
+    sanitized = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '', title)
+
+    # 연속된 공백을 하나로, 앞뒤 공백 제거
+    sanitized = re.sub(r'\s+', ' ', sanitized).strip()
+
+    # 점(.)으로 시작하는 파일명 방지 (숨김 파일)
+    sanitized = sanitized.lstrip('.')
+
+    # 파일명이 비어있으면 기본값 사용
+    if not sanitized:
+        sanitized = "untitled"
+
+    # 길이 제한 (너무 긴 파일명 방지)
+    if len(sanitized) > max_length:
+        sanitized = sanitized[:max_length].strip()
+
+    return sanitized
+
+async def get_video_title(url: str) -> str:
+    """
+    yt-dlp를 사용하여 YouTube 영상의 제목을 가져옴
+    """
+    try:
+        # yt-dlp로 메타데이터만 가져오기 (다운로드 하지 않음)
+        process = await asyncio.create_subprocess_exec(
+            "yt-dlp",
+            "--dump-json",
+            "--no-playlist",
+            url,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+
+        if process.returncode == 0 and stdout:
+            metadata = json.loads(stdout.decode())
+            return metadata.get('title', 'Untitled Video')
+        else:
+            # 제목을 가져오지 못한 경우 기본값 반환
+            return 'Untitled Video'
+    except Exception as e:
+        # 오류 발생 시 기본값 반환
+        return 'Untitled Video'
 
 class JobService:
     @staticmethod
@@ -42,26 +97,42 @@ class JobService:
                     select(ConversionJob).where(ConversionJob.job_id == job_id)
                 )
                 job = result.scalar_one_or_none()
-                
+
                 if not job:
                     return
-                
+
                 job.status = JobStatus.PROCESSING
                 job.progress = 10
                 await session.commit()
-            
+
+            # YouTube 제목 추출
+            video_title = await get_video_title(job.url)
+
+            # 제목을 DB에 저장
+            async with async_session() as session:
+                result = await session.execute(
+                    select(ConversionJob).where(ConversionJob.job_id == job_id)
+                )
+                job = result.scalar_one_or_none()
+
+                if job:
+                    job.title = video_title
+                    job.progress = 20
+                    await session.commit()
+
             # 작업 정보 다시 조회 (비동기 작업을 위해)
             async with async_session() as session:
                 result = await session.execute(
                     select(ConversionJob).where(ConversionJob.job_id == job_id)
                 )
                 job = result.scalar_one_or_none()
-                
+
                 if not job:
                     return
-                
-                # 파일명 생성
-                filename = f"{job_id}.{job.format}"
+
+                # 파일명 생성 - 제목 기반으로 변경
+                sanitized_title = sanitize_filename(job.title or "untitled")
+                filename = f"{sanitized_title}.{job.format}"
                 filepath = DOWNLOAD_DIR / filename
                 
                 # yt-dlp 명령어 구성
@@ -85,9 +156,9 @@ class JobService:
                     command += ["--merge-output-format", "mp4"]
                 
                 command += ["-o", str(filepath), job.url]
-                
+
                 # 진행률 업데이트
-                job.progress = 50
+                job.progress = 60
                 await session.commit()
                 
             # 변환 실행 (비동기) - 세션 외부에서 실행
