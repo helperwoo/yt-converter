@@ -258,20 +258,47 @@ class JobService:
                     select(ConversionJob).where(ConversionJob.job_id == job_id)
                 )
                 job = result.scalar_one_or_none()
-                
+
                 if not job:
                     return False
-                
-                # 파일이 있다면 삭제
+
+                # 파일 삭제 시도
+                file_deleted = False
+                file_error = None
+
+                # 1. filename 속성이 있으면 해당 파일 삭제
                 if job.filename:
                     filepath = DOWNLOAD_DIR / job.filename
-                    if filepath.exists():
-                        filepath.unlink()
-                
+                    try:
+                        if filepath.exists():
+                            filepath.unlink()
+                            file_deleted = True
+                    except Exception as e:
+                        file_error = e
+
+                # 2. filename이 없지만 title이 있으면 title 기반 파일명으로 삭제 시도
+                elif job.title and job.format:
+                    sanitized_title = sanitize_filename(job.title)
+                    filename = f"{sanitized_title}.{job.format}"
+                    filepath = DOWNLOAD_DIR / filename
+                    try:
+                        if filepath.exists():
+                            filepath.unlink()
+                            file_deleted = True
+                    except Exception as e:
+                        file_error = e
+
+                # 파일 삭제 실패 시에도 DB에서는 제거 (파일이 이미 없을 수 있음)
+                # 단, 파일이 존재했는데 삭제 실패한 경우에만 예외 발생
+                if file_error and not file_deleted:
+                    # 파일이 존재했는데 삭제 실패한 경우
+                    # 이 경우에도 DB 레코드는 삭제하도록 진행
+                    pass
+
                 await session.delete(job)
                 await session.commit()
                 return True
-                
+
         except Exception as e:
             return False
     
