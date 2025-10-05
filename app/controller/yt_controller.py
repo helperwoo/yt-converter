@@ -4,23 +4,15 @@ from fastapi import Form, APIRouter, Request
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from service.job_service import JobService
+from utils.datetime_helper import format_datetime_utc
 import subprocess
 import uuid
 
 router = APIRouter(tags=["YT"])
 templates = Jinja2Templates(directory="templates")
 
-# Jinja2 필터 추가: datetime을 UTC ISO 형식으로 변환 (timezone 명시)
-def to_iso(dt):
-    if dt is None:
-        return ''
-    iso_str = dt.isoformat() if dt else ''
-    # SQLite는 timezone 정보를 저장하지 않으므로 UTC로 명시
-    if iso_str and '+' not in iso_str and not iso_str.endswith('Z'):
-        iso_str += '+00:00'
-    return iso_str
-
-templates.env.filters['to_iso'] = to_iso
+# Jinja2 필터 등록
+templates.env.filters['to_iso'] = format_datetime_utc
 
 DOWNLOAD_DIR = Path(os.getenv("DOWNLOAD_DIR", "downloads"))
 DOWNLOAD_DIR.mkdir(exist_ok=True)
@@ -69,16 +61,6 @@ async def get_job_api(job_id: str):
     if not job:
         return {"error": "Job not found"}
 
-    # datetime을 ISO 형식으로 변환하고 UTC timezone 명시
-    def format_datetime(dt):
-        if not dt:
-            return None
-        iso_str = dt.isoformat()
-        # SQLite는 timezone 정보를 저장하지 않으므로 UTC로 명시
-        if '+' not in iso_str and not iso_str.endswith('Z'):
-            iso_str += '+00:00'
-        return iso_str
-
     return {
         "job_id": job.job_id,
         "status": job.status,
@@ -86,8 +68,8 @@ async def get_job_api(job_id: str):
         "title": job.title,
         "filename": job.filename,
         "error_message": job.error_message,
-        "created_at": format_datetime(job.created_at),
-        "completed_at": format_datetime(job.completed_at)
+        "created_at": format_datetime_utc(job.created_at) or None,
+        "completed_at": format_datetime_utc(job.completed_at) or None
     }
 
 @router.delete("/api/job/{job_id}")

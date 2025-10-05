@@ -5,58 +5,6 @@
 {% block body_class %}bg-gradient-to-br from-slate-900 via-gray-900 to-zinc-900{% endblock %}
 
 {% block content %}
-<script>
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(function() {
-        // 성공 알림
-        const toast = document.createElement('div');
-        toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-        toast.textContent = '클립보드에 복사되었습니다!';
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            document.body.removeChild(toast);
-        }, 2000);
-    }, function(err) {
-        console.error('클립보드 복사 실패: ', err);
-        alert('클립보드 복사에 실패했습니다.');
-    });
-}
-
-async function retryJob(jobId) {
-    if (!confirm('이 작업을 재변환하시겠습니까?')) return;
-
-    try {
-        const response = await fetch(`/api/job/${jobId}/retry`, {
-            method: 'POST'
-        });
-        if (response.ok) {
-            location.reload();
-        } else {
-            alert('재변환 요청에 실패했습니다.');
-        }
-    } catch (error) {
-        alert('재변환 요청 중 오류가 발생했습니다.');
-    }
-}
-
-async function deleteJob(jobId) {
-    if (!confirm('이 작업을 삭제하시겠습니까? 다운로드된 파일도 함께 삭제됩니다.')) return;
-
-    try {
-        const response = await fetch(`/api/job/${jobId}`, {
-            method: 'DELETE'
-        });
-        if (response.ok) {
-            location.reload();
-        } else {
-            alert('작업 삭제에 실패했습니다.');
-        }
-    } catch (error) {
-        alert('작업 삭제 중 오류가 발생했습니다.');
-    }
-}
-</script>
 
 <div class="text-center">
     <div class="mx-auto h-20 w-20 bg-gradient-to-r from-slate-500 to-gray-500 rounded-full flex items-center justify-center mb-6">
@@ -103,7 +51,7 @@ async function deleteJob(jobId) {
                 {% else %}
                 <p class="text-white font-medium text-sm mb-1 truncate" title="{{ job.url }}">{{ job.url }}</p>
                 {% endif %}
-                <p class="text-gray-400 text-xs">{{ job.created_at.strftime('%Y-%m-%d %H:%M:%S') if job.created_at else 'N/A' }}</p>
+                <p class="text-gray-400 text-xs">{{ job.created_at.strftime('%Y-%m-%d %H:%M:%S') if job.created_at else 'N/A' | to_iso }}</p>
 
                 {% if job.status == 'processing' %}
                 <div class="mt-2">
@@ -122,12 +70,12 @@ async function deleteJob(jobId) {
                     상세보기
                 </a>
 
-                <button onclick="copyToClipboard('{{ request.url_for('get_job_api', job_id=job.job_id) }}')"
+                <button onclick="copyToClipboard('{{ job.url }}')"
                    class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded text-sm transition-colors flex items-center whitespace-nowrap">
                     <svg class="w-4 h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                     </svg>
-                    복사
+                    링크
                 </button>
 
                 {% if job.status == 'completed' and job.filename %}
@@ -135,13 +83,6 @@ async function deleteJob(jobId) {
                    class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-colors whitespace-nowrap">
                     다운로드
                 </a>
-                <button onclick="copyToClipboard('{{ request.url_for('download', filename=job.filename) }}')"
-                   class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded text-sm transition-colors flex items-center whitespace-nowrap">
-                    <svg class="w-4 h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                    </svg>
-                    링크
-                </button>
                 {% elif job.status == 'failed' %}
                 <button onclick="retryJob('{{ job.job_id }}')"
                    class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm transition-colors flex items-center whitespace-nowrap">
@@ -185,4 +126,58 @@ async function deleteJob(jobId) {
         홈으로 돌아가기
     </a>
 </div>
+
+<script>
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(function() {
+            // 성공 알림
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+            toast.textContent = '클립보드에 복사되었습니다!';
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 2000);
+        }, function(err) {
+            console.error('클립보드 복사 실패: ', err);
+            alert('클립보드 복사에 실패했습니다.');
+        });
+    }
+
+    async function retryJob(jobId) {
+        if (!confirm('이 작업을 재변환하시겠습니까?')) return;
+
+        try {
+            const response = await fetch(`/api/job/${jobId}/retry`, {
+                method: 'POST'
+            });
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('재변환 요청에 실패했습니다.');
+            }
+        } catch (error) {
+            alert('재변환 요청 중 오류가 발생했습니다.');
+        }
+    }
+
+    async function deleteJob(jobId) {
+        if (!confirm('이 작업을 삭제하시겠습니까? 다운로드된 파일도 함께 삭제됩니다.')) return;
+
+        try {
+            const response = await fetch(`/api/job/${jobId}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('작업 삭제에 실패했습니다.');
+            }
+        } catch (error) {
+            alert('작업 삭제 중 오류가 발생했습니다.');
+        }
+    }
+</script>
+
 {% endblock %}

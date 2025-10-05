@@ -4,7 +4,7 @@ import uuid
 import re
 import json
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from models.job import ConversionJob, JobStatus
@@ -184,12 +184,12 @@ class JobService:
                             job.status = JobStatus.COMPLETED
                             job.progress = 100
                             job.filename = filename
-                            job.completed_at = datetime.utcnow()
+                            job.completed_at = datetime.now(timezone.utc)
                         else:
                             # 실패
                             job.status = JobStatus.FAILED
                             job.error_message = stderr.decode() if stderr else stdout.decode()
-                        
+
                         await session.commit()
                 
             except Exception as e:
