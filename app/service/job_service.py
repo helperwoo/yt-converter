@@ -230,6 +230,16 @@ class JobService:
             return result.scalar_one_or_none()
     
     @staticmethod
+    async def get_jobs(job_ids: list[str]) -> list[ConversionJob]:
+        async with async_session() as session:
+            result = await session.execute(
+                select(ConversionJob)
+                .where(ConversionJob.job_id.in_(job_ids))
+                .order_by(ConversionJob.created_at.desc())
+            )
+            return result.scalars().all()
+    
+    @staticmethod
     async def get_all_jobs(limit: int = 50) -> list[ConversionJob]:
         async with async_session() as session:
             result = await session.execute(
