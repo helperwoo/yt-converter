@@ -79,7 +79,6 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ### 웹 UI
 - `GET /` - 메인 페이지
 - `POST /convert` - 변환 작업 생성
-- `GET /job/{job_id}` - 작업 상태 페이지
 - `GET /jobs` - 작업 목록 페이지
 - `GET /download/{filename}` - 파일 다운로드
 

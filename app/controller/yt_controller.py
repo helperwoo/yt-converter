@@ -1,10 +1,12 @@
 import os
 from pathlib import Path
-from fastapi import Form, APIRouter, Request
+from fastapi import Form, APIRouter, Request, Query
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from service.job_service import JobService
 from utils.datetime_helper import format_datetime_utc
+from random import random
+import math
 import subprocess
 import uuid
 
@@ -31,21 +33,7 @@ async def convert(request: Request, ext: str = Form(...), quality: str = Form(..
     job_id = await JobService.create_job(url, ext, quality)
     
     # 작업 상태 페이지로 리다이렉트
-    return RedirectResponse(url=f"/job/{job_id}", status_code=303)
-
-@router.get("/job/{job_id}")
-async def job_status(request: Request, job_id: str):
-    job = await JobService.get_job(job_id)
-    if not job:
-        return templates.TemplateResponse("error.html", {
-            "request": request,
-            "error_message": "작업을 찾을 수 없습니다."
-        })
-    
-    return templates.TemplateResponse("job_status.html", {
-        "request": request,
-        "job": job
-    })
+    return RedirectResponse(url=f"/jobs", status_code=303)
 
 @router.get("/jobs")
 async def jobs_list(request: Request, page: int = 1, per_page: int = 10):
@@ -85,6 +73,24 @@ async def get_job_api(job_id: str):
         "created_at": format_datetime_utc(job.created_at) or None,
         "completed_at": format_datetime_utc(job.completed_at) or None
     }
+
+@router.get("/api/jobs")
+async def get_jobs_api(job_ids: list[str] = Query(default=[])):
+    jobs = await JobService.get_jobs(job_ids)
+    if not jobs:
+        return {"error": "Jobs not found"}
+    
+    return [{
+        "job_id": job.job_id,
+        "status": job.status,
+        "progress": job.progress,
+        "title": job.title,
+        "filename": job.filename,
+        "error_message": job.error_message,
+        "created_at": format_datetime_utc(job.created_at) or None,
+        "completed_at": format_datetime_utc(job.completed_at) or None
+    } for job in jobs]
+
 
 @router.delete("/api/job/{job_id}")
 async def delete_job_api(job_id: str):

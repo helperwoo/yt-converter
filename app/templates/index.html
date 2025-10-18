@@ -1,116 +1,260 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block title %}YouTube Converter{% endblock %} {%
+block content %}
 
-{% block title %}YouTube Converter{% endblock %}
 
-{% block content %}
-<script>
-function toggleQualityOptions() {
-    const extSelect = document.getElementById('ext');
-    const qualitySelect = document.getElementById('quality');
-    const mp3Options = document.querySelectorAll('.mp3-option');
-    const mp4Options = document.querySelectorAll('.mp4-option');
-    
-    if (extSelect.value === 'mp3') {
-        // MP3 옵션 표시, MP4 옵션 숨김
-        mp3Options.forEach(option => {
-            option.style.display = 'block';
-            option.disabled = false;
-        });
-        mp4Options.forEach(option => {
-            option.style.display = 'none';
-            option.disabled = true;
-        });
-        // 첫 번째 MP3 옵션 선택
-        qualitySelect.value = '320';
-    } else {
-        // MP4 옵션 표시, MP3 옵션 숨김
-        mp3Options.forEach(option => {
-            option.style.display = 'none';
-            option.disabled = true;
-        });
-        mp4Options.forEach(option => {
-            option.style.display = 'block';
-            option.disabled = false;
-        });
-        // 첫 번째 MP4 옵션 선택
-        qualitySelect.value = '1080';
-    }
-}
-
-// 페이지 로드 시 초기 설정
-document.addEventListener('DOMContentLoaded', function() {
-    toggleQualityOptions();
-});
-</script>
-<div class="text-center">
-    <div class="mx-auto h-20 w-20 bg-gradient-to-r from-pink-500 to-violet-500 rounded-full flex items-center justify-center mb-6">
-        <svg class="h-10 w-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-        </svg>
-    </div>
-    <h2 class="text-4xl font-bold text-white mb-2">YouTube Converter</h2>
-    <p class="text-blue-200 text-lg">YouTube 영상을 MP3/MP4로 간편하게 변환하세요</p>
-</div>
-
-<div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20">
-    <form action="/convert" method="post" class="space-y-6">
-        <div>
-            <label for="ext" class="block text-sm font-medium text-white mb-2">파일 형식</label>
-            <select name="ext" id="ext" onchange="toggleQualityOptions()" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200">
-                <option value="mp3" class="bg-gray-800 text-white">🎵 MP3 (오디오)</option>
-                <option value="mp4" class="bg-gray-800 text-white">🎬 MP4 (비디오)</option>
-            </select>
-        </div>
-        
-        <div>
-            <label for="quality" class="block text-sm font-medium text-white mb-2">품질 선택</label>
-            <select name="quality" id="quality" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200">
-                <!-- MP3 옵션 (기본값) -->
-                <option value="320" class="bg-gray-800 text-white mp3-option">🎵 320kbps (최고 품질)</option>
-                <option value="256" class="bg-gray-800 text-white mp3-option">🎵 256kbps (고품질)</option>
-                <option value="192" class="bg-gray-800 text-white mp3-option">🎵 192kbps (일반 품질)</option>
-                <option value="128" class="bg-gray-800 text-white mp3-option">🎵 128kbps (낮은 품질)</option>
-                
-                <!-- MP4 옵션 -->
-                <option value="1080" class="bg-gray-800 text-white mp4-option" style="display: none">🎬 1080p (Full HD)</option>
-                <option value="720" class="bg-gray-800 text-white mp4-option" style="display: none">🎬 720p (HD)</option>
-                <option value="480" class="bg-gray-800 text-white mp4-option" style="display: none">🎬 480p (SD)</option>
-                <option value="360" class="bg-gray-800 text-white mp4-option" style="display: none">🎬 360p (낮은 품질)</option>
-            </select>
-        </div>
-        
-        <div>
-            <label for="url" class="block text-sm font-medium text-white mb-2">YouTube URL</label>
-            <input type="text" name="url" id="url" placeholder="https://www.youtube.com/watch?v=..." 
-                   class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
-                   required />
-        </div>
-        
-        <button type="submit" 
-                class="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-transparent shadow-lg">
-            <span class="flex items-center justify-center">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-                </svg>
-                변환 시작
-            </span>
-        </button>
-    </form>
-</div>
-
-<div class="flex justify-center space-x-4">
-    <a href="/jobs" 
-       class="inline-flex items-center text-blue-200 hover:text-white text-sm transition-colors">
-        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-        </svg>
-        작업 목록 보기
-    </a>
-</div>
-
-<div class="text-center mt-4">
-    <p class="text-blue-200 text-sm">
-        빠르고 안전한 YouTube 비디오 변환 서비스
+<div class="text-center my-[40px]">
+    <p class="text-sm text-white" style="line-height: 1.7">
+        YouTube 영상을 <b>음원</b> / <b>영상</b>으로 변환하세요
     </p>
 </div>
+
+<div class="text-[#1e2a54] bg-[#fff] max-w-[600px] rounded-[8px] mx-auto p-10 shadow-2xl">
+    <form action="/convert" method="post">
+        <!-- Format Selection -->
+        <div class="mb-4">
+            <label for="ext" class="block text-sm text-gray-700 mb-2" style="font-weight: 500">파일 형식</label>
+            <select name="ext" id="ext" onchange="toggleQualityOptions()"
+                class="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white text-gray-900"
+                style="transition: border-color 0.2s, box-shadow 0.2s; outline: none"
+                onfocus="this.style.borderColor='#1e2a54'; this.style.boxShadow='0 0 0 1px #1e2a54';"
+                onblur="this.style.borderColor='#d1d5db'; this.style.boxShadow='none';">
+                <option value="mp3">MP3 (오디오)</option>
+                <option value="mp4">MP4 (비디오)</option>
+            </select>
+        </div>
+
+        <!-- Quality Selection -->
+        <div class="mb-5">
+            <label for="quality" class="block text-sm text-gray-700 mb-2" style="font-weight: 500">품질</label>
+            <select name="quality" id="quality"
+                class="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white text-gray-900"
+                style="transition: border-color 0.2s, box-shadow 0.2s; outline: none"
+                onfocus="this.style.borderColor='#1e2a54'; this.style.boxShadow='0 0 0 1px #1e2a54';"
+                onblur="this.style.borderColor='#d1d5db'; this.style.boxShadow='none';">
+                <option value="320" class="mp3-option">320kbps (최고 품질)</option>
+                <option value="256" class="mp3-option">256kbps (고품질)</option>
+                <option value="192" class="mp3-option">192kbps (일반 품질)</option>
+                <option value="128" class="mp3-option">128kbps (낮은 품질)</option>
+                <option value="1080" class="mp4-option" style="display: none">
+                    1080p (Full HD)
+                </option>
+                <option value="720" class="mp4-option" style="display: none">
+                    720p (HD)
+                </option>
+                <option value="480" class="mp4-option" style="display: none">
+                    480p (SD)
+                </option>
+                <option value="360" class="mp4-option" style="display: none">
+                    360p (낮은 품질)
+                </option>
+            </select>
+        </div>
+
+        <div class="mb-4">
+            <label for="url" class="block text-sm text-gray-700 mb-2" style="font-weight: 500">YouTube URL</label>
+
+            <div class="flex gap-[8px]">
+                <input type="text" name="url" id="url" placeholder="https://www.youtube.com/watch?v=..."
+                    class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded bg-white text-gray-900 placeholder-gray-400"
+                    style="transition: border-color 0.2s, box-shadow 0.2s; outline: none"
+                    onfocus="this.style.borderColor='#1e2a54'; this.style.boxShadow='0 0 0 1px #1e2a54';"
+                    onblur="this.style.borderColor='#d1d5db'; this.style.boxShadow='none';" required />
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <button type="submit"
+                class="w-full py-2.5 px-4 text-sm font-medium text-white rounded-[8px] bg-[#121212] outline-none"
+                onmouseover="this.style.backgroundColor='#2a2a2a';" onmouseout="this.style.backgroundColor='#121212';"
+                onfocus="this.style.boxShadow='0 0 0 2px rgba(18,18,18,0.3)';" onblur="this.style.boxShadow='none';">
+                변환
+            </button>
+        </div>
+    </form>
+
+    <div class="flex justify-center items-center">
+        <a href="/jobs" class="inline-flex items-center text-gray-900 hover:text-gray-600 text-sm transition-colors">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+                </path>
+            </svg>
+            작업 목록 보기
+        </a>
+    </div>
+</div>
+
+
+<div class="max-w-[600px] mx-auto py-10">
+    <div class="bg-white rounded-[8px] shadow-sm border border-gray-200" style="box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <div class="text-center ">
+            <h1 class="text-2xl font-normal text-gray-900 mb-2" style="line-height: 1.7;">사용 가이드</h1>
+        </div>
+
+        <div class="p-6 space-y-5">
+            <!-- 단계 1 -->
+            <div class="border-b border-gray-200 pb-6">
+                <div class="flex items-start gap-4">
+                    <div class="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs text-white"
+                        style="background-color: #121212; font-weight: 600;">
+                        1
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-base text-gray-900 mb-2" style="font-weight: 500; line-height: 1.7;">
+                            변환할 파일형식 선택
+                        </h3>
+                        <ul class="space-y-1.5 text-sm" style="line-height: 1.7;">
+                            <li class="flex items-start gap-2">
+                                <span class="text-gray-900" style="font-weight: 500;">• MP3 - </span>
+                                <span class="text-gray-600">음원 추출</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-gray-900" style="font-weight: 500;">• MP4 - </span>
+                                <span class="text-gray-600">영상 추출</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 단계 2 -->
+            <div class="border-b border-gray-200 pb-6">
+                <div class="flex items-start gap-4">
+                    <div class="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs text-white"
+                        style="background-color: #121212; font-weight: 600;">
+                        2
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-800 mb-2">품질 선택</h3>
+                        <p class="text-gray-600 text-sm mb-3">
+                            파일 형식에 따라 품질을 선택합니다:
+                        </p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="bg-gray-50 border border-gray-200 rounded p-3">
+                                <h4 class="font-medium text-gray-800 text-sm mb-2">MP3 품질</h4>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li>• 320kbps (최고 품질)</li>
+                                    <li>• 256kbps (고품질)</li>
+                                    <li>• 192kbps (일반 품질)</li>
+                                    <li>• 128kbps (낮은 품질)</li>
+                                </ul>
+                            </div>
+                            <div class="bg-gray-50 border border-gray-200 rounded p-3">
+                                <h4 class="font-medium text-gray-800 text-sm mb-2">MP4 해상도</h4>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li>• 1080p (Full HD)</li>
+                                    <li>• 720p (HD)</li>
+                                    <li>• 480p (SD)</li>
+                                    <li>• 360p (낮은 품질)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 단계 3 -->
+            <div class="border-b border-gray-200 pb-6">
+                <div class="flex items-start gap-4">
+                    <div
+                        class="flex-shrink-0 w-8 h-8 bg-gray-800 text-white rounded-full flex items-center justify-center font-semibold">
+                        3
+                    </div>
+
+                    <div class="flex-1">
+                        <h3 class="text-base text-gray-900 mb-2" style="font-weight: 500; line-height: 1.7;">
+                            YouTube URL 복사
+                        </h3>
+                        <p class="text-sm text-gray-600 mb-2" style="line-height: 1.7;">
+                            변환하려는 YouTube 영상의 URL을 복사합니다. URL은 다음과 같은 형식이어야 합니다:
+                        </p>
+                        <div class="rounded p-2.5" style="background-color: #f9fafb; border: 1px solid #e5e7eb;">
+                            <code class="text-xs text-gray-700"
+                                style="line-height: 1.7;">https://www.youtube.com/watch?v=...</code>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2" style="line-height: 1.7;">
+                            ⚠️ 비공개 영상이나 연령 제한 영상은 변환할 수 없습니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 단계 4 -->
+            <div class="border-b border-gray-200 pb-6">
+                <div class="flex items-start gap-4">
+                    <div
+                        class="flex-shrink-0 w-8 h-8 bg-gray-800 text-white rounded-full flex items-center justify-center font-semibold">
+                        4
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-800 mb-2">변환 시작</h3>
+                        <p class="text-gray-600 text-sm mb-3">
+                            "변환" 버튼을 클릭하면 변환을 시작합니다. 자동으로 "작업상태" 페이지로 이동합니다.
+                        </p>
+                        <p class="text-gray-500 text-xs">
+                            💡 변환 시간은 영상 길이와 품질에 따라 다릅니다. (일반적으로 30초 이내)
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 단계 5 -->
+            <div class="pb-2">
+                <div class="flex items-start gap-4">
+                    <div
+                        class="flex-shrink-0 w-8 h-8 bg-gray-800 text-white rounded-full flex items-center justify-center font-semibold">
+                        5
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-800 mb-2">다운로드</h3>
+                        <p class="text-gray-600 text-sm mb-3">
+                            변환이 완료되면 다운로드 버튼을 클릭하여 파일을 저장하세요.
+                        </p>
+                        <p class="text-gray-500 text-xs">
+                            💡 "작업목록" 페이지에서 모든 변환 작업을 확인하고 관리할 수 있습니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    function toggleQualityOptions() {
+        const extSelect = document.getElementById("ext");
+        const qualitySelect = document.getElementById("quality");
+        const mp3Options = document.querySelectorAll(".mp3-option");
+        const mp4Options = document.querySelectorAll(".mp4-option");
+
+        if (extSelect.value === "mp3") {
+            mp3Options.forEach((option) => {
+                option.style.display = "block";
+                option.disabled = false;
+            });
+            mp4Options.forEach((option) => {
+                option.style.display = "none";
+                option.disabled = true;
+            });
+            qualitySelect.value = "320";
+        } else {
+            mp3Options.forEach((option) => {
+                option.style.display = "none";
+                option.disabled = true;
+            });
+            mp4Options.forEach((option) => {
+                option.style.display = "block";
+                option.disabled = false;
+            });
+            qualitySelect.value = "1080";
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        toggleQualityOptions();
+    });
+</script>
+
 {% endblock %}
