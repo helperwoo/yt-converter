@@ -238,6 +238,30 @@ class JobService:
                 .limit(limit)
             )
             return result.scalars().all()
+
+    @staticmethod
+    async def get_paginated_jobs(page: int, per_page: int) -> tuple[int, list[ConversionJob]]:
+        """
+        페이지네이션된 작업 목록과 전체 작업 수를 반환
+        """
+        async with async_session() as session:
+            # 전체 작업 수 조회
+            count_result = await session.execute(
+                select(ConversionJob)
+            )
+            total_count = len(count_result.scalars().all())
+
+            # 페이지네이션된 작업 목록 조회
+            offset = (page - 1) * per_page
+            result = await session.execute(
+                select(ConversionJob)
+                .order_by(ConversionJob.created_at.desc())
+                .limit(per_page)
+                .offset(offset)
+            )
+            jobs = result.scalars().all()
+
+            return total_count, jobs
     
     @staticmethod
     async def get_jobs_by_status(status: JobStatus, limit: int = 50) -> list[ConversionJob]:
