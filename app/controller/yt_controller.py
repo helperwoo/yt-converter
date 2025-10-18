@@ -48,11 +48,25 @@ async def job_status(request: Request, job_id: str):
     })
 
 @router.get("/jobs")
-async def jobs_list(request: Request):
-    jobs = await JobService.get_all_jobs()
+async def jobs_list(request: Request, page: int = 1, per_page: int = 10):
+    # 페이지 번호와 페이지당 항목 수 검증
+    page = max(1, page)
+    if per_page not in [10, 20, 100]:
+        per_page = 10
+
+    # 전체 작업 수와 페이지네이션된 작업 목록 가져오기
+    total_jobs, jobs = await JobService.get_paginated_jobs(page, per_page)
+
+    # 전체 페이지 수 계산
+    total_pages = (total_jobs + per_page - 1) // per_page
+
     return templates.TemplateResponse("jobs.html", {
         "request": request,
-        "jobs": jobs
+        "jobs": jobs,
+        "page": page,
+        "per_page": per_page,
+        "total_jobs": total_jobs,
+        "total_pages": total_pages
     })
 
 @router.get("/api/job/{job_id}")
