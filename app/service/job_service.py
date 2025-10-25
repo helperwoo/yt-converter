@@ -132,7 +132,7 @@ class JobService:
 
                 # 파일명 생성 - 제목 기반으로 변경
                 sanitized_title = sanitize_filename(job.title or "untitled")
-                filename = f"{sanitized_title}.{job.format}"
+                filename = f"{sanitized_title}_{job.id}.{job.format}"
                 filepath = DOWNLOAD_DIR / filename
                 
                 # yt-dlp 명령어 구성
