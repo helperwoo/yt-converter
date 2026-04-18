@@ -1,15 +1,22 @@
 services:
-  youtube_converter:
+  yt_converter:
     build:
       context: .
-    restart: unless-stopped
-    container_name: youtube_converter
+    container_name: yt_converter
+    restart: always
     networks:
-      - traefik
+      - proxy
     expose:
       - "8000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.youtube.rule=Host(`yt.test`)"
+      - "traefik.http.routers.youtube.entrypoints=websecure"
+      - "traefik.http.routers.youtube.tls=true"
+      - "traefik.http.services.youtube.loadbalancer.server.port=8000"
     volumes:
       - ./app:/home/app
+
 networks:
-  traefik:
+  proxy:
     external: true

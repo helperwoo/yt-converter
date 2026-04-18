@@ -25,7 +25,7 @@ async def ping():
 
 @router.get("/")
 async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 @router.post("/convert")
 async def convert(request: Request, ext: str = Form(...), quality: str = Form(...), url: str = Form(...)):
@@ -48,8 +48,7 @@ async def jobs_list(request: Request, page: int = 1, per_page: int = 10):
     # 전체 페이지 수 계산
     total_pages = (total_jobs + per_page - 1) // per_page
 
-    return templates.TemplateResponse("jobs.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "jobs.html", {
         "jobs": jobs,
         "page": page,
         "per_page": per_page,
