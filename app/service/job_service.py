@@ -101,12 +101,13 @@ class JobService:
                 if not job:
                     return
 
+                job_url = job.url
                 job.status = JobStatus.PROCESSING
                 job.progress = 10
                 await session.commit()
 
             # YouTube 제목 추출
-            video_title = await get_video_title(job.url)
+            video_title = await get_video_title(job_url)
 
             # 제목을 DB에 저장
             async with async_session() as session:
@@ -313,7 +314,7 @@ class JobService:
                 # 2. filename이 없지만 title이 있으면 title 기반 파일명으로 삭제 시도
                 elif job.title and job.format:
                     sanitized_title = sanitize_filename(job.title)
-                    filename = f"{sanitized_title}.{job.format}"
+                    filename = f"{sanitized_title}_{job.id}.{job.format}"
                     filepath = DOWNLOAD_DIR / filename
                     try:
                         if filepath.exists():
