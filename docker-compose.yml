@@ -10,7 +10,7 @@ services:
       - "8000"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.youtube.rule=Host(`${HOST}`)"
+      - "traefik.http.routers.youtube.rule=Host(`yt.test`)"
       - "traefik.http.routers.youtube.entrypoints=websecure"
       - "traefik.http.routers.youtube.tls=true"
       - "traefik.http.routers.youtube.middlewares=sslheader"
